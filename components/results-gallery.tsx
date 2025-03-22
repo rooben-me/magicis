@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,24 +12,6 @@ interface ResultsGalleryProps {
 
 export function ResultsGallery({ results, isLoading }: ResultsGalleryProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [visibleImages, setVisibleImages] = useState<Set<string>>(new Set());
-
-  // Add images gradually with a delay
-  useEffect(() => {
-    if (!results.length) return;
-
-    // Flatten all image IDs
-    const allImageIds = results.flatMap((result) =>
-      result.images.map((img) => img.id)
-    );
-
-    // Add images with a delay
-    allImageIds.forEach((imageId, index) => {
-      setTimeout(() => {
-        setVisibleImages((prev) => new Set([...prev, imageId]));
-      }, index * 200); // 200ms delay between each image
-    });
-  }, [results]);
 
   const handleDownload = async (url: string, filename: string) => {
     try {
@@ -79,15 +61,11 @@ export function ResultsGallery({ results, isLoading }: ResultsGalleryProps) {
                 className="group relative overflow-hidden glow-card"
               >
                 <div className="aspect-[9/5.5] relative">
-                  {visibleImages.has(image.id) ? (
-                    <img
-                      src={image.url || "/placeholder.svg"}
-                      alt={`Generated lifestyle shot ${image.id}`}
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 animate-pulse" />
-                  )}
+                  <img
+                    src={image.url || "/placeholder.svg"}
+                    alt={`Generated lifestyle shot ${image.id}`}
+                    className="object-cover"
+                  />
 
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <Button

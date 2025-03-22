@@ -16,7 +16,7 @@ interface SceneSelectorProps {
 
 // Predefined scene suggestions
 const PREDEFINED_SCENES: SceneSuggestion[] = [
-  { id: "scene-1", description: "A kitchen counter with a blurred background" },
+  { id: "scene-1", description: "High end photography" },
   { id: "scene-2", description: "A pantry shelf alongside other food items" },
   { id: "scene-3", description: "A dining table setting as part of a meal" },
   { id: "scene-4", description: "A health food store display" },
