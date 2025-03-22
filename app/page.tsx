@@ -1,40 +1,45 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useMutation } from "@tanstack/react-query"
-import { FileUpload } from "@/components/file-upload"
-import { SceneSelector } from "@/components/scene-selector"
-import { ResultsGallery } from "@/components/results-gallery"
-import { Button } from "@/components/ui/button"
-import { Wand2 } from "lucide-react"
-import type { SceneSuggestion, UploadedImage, GenerationResult } from "@/types"
-import { useToast } from "@/hooks/use-toast"
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { FileUpload } from "@/components/file-upload";
+import { SceneSelector } from "@/components/scene-selector";
+import { ResultsGallery } from "@/components/results-gallery";
+import { Button } from "@/components/ui/button";
+import { Wand2 } from "lucide-react";
+import type { SceneSuggestion, UploadedImage, GenerationResult } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Home() {
-  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
-  const [selectedScene, setSelectedScene] = useState<SceneSuggestion | null>(null)
-  const [results, setResults] = useState<GenerationResult[]>([])
-  const { toast } = useToast()
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<UploadedImage | null>(
+    null
+  );
+  const [selectedScene, setSelectedScene] = useState<SceneSuggestion | null>(
+    null
+  );
+  const [results, setResults] = useState<GenerationResult[]>([]);
+  const [numImages, setNumImages] = useState<number>(4);
+  const { toast } = useToast();
+
+  console.log(results);
 
   const { mutate: generateLifestyleShots, isPending } = useMutation({
     mutationFn: async () => {
-      if (!uploadedImages.length) {
-        throw new Error("Please upload at least one product image")
+      if (!selectedProduct) {
+        throw new Error("Please select a product image");
       }
 
       if (!selectedScene) {
-        throw new Error("Please select a scene description")
+        throw new Error("Please select a scene description");
       }
-
-      // Create a blob URL for the first image
-      const file = uploadedImages[0].file
-      const formData = new FormData()
-      formData.append("file", file)
-
-      // Upload the image to get a URL
-      // In a real app, you'd upload to a storage service
-      // For this demo, we'll use the existing URL
-      const imageUrl = uploadedImages[0].url
 
       const response = await fetch("/api/generate-lifestyle", {
         method: "POST",
@@ -42,26 +47,28 @@ export default function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          imageUrl,
+          imageUrl: selectedProduct.url,
           sceneDescription: selectedScene.description,
-          numResults: 4,
+          numResults: numImages,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to generate lifestyle shots")
+        const error = await response.json();
+        throw new Error(error.error || "Failed to generate lifestyle shots");
       }
 
-      return response.json()
+      return response.json();
     },
     onSuccess: (data) => {
       if (data.images) {
         const newResult: GenerationResult = {
+          productImage: selectedProduct!,
           images: data.images,
           sceneDescription: selectedScene?.description || "Unknown scene",
-        }
-        setResults([newResult, ...results])
+          timestamp: new Date().toISOString(),
+        };
+        setResults([newResult, ...results]);
       }
     },
     onError: (error: Error) => {
@@ -69,21 +76,29 @@ export default function Home() {
         title: "Error",
         description: error.message,
         variant: "destructive",
-      })
+      });
     },
-  })
+  });
 
   const handleImageUpload = (images: UploadedImage[]) => {
-    setUploadedImages(images)
-  }
+    setUploadedImages(images);
+    // Select the first uploaded image by default if none selected
+    if (images.length > 0 && !selectedProduct) {
+      setSelectedProduct(images[0]);
+    }
+  };
+
+  const handleProductSelect = (image: UploadedImage) => {
+    setSelectedProduct(image);
+  };
 
   const handleSceneSelect = (scene: SceneSuggestion) => {
-    setSelectedScene(scene)
-  }
+    setSelectedScene(scene);
+  };
 
   const handleGenerate = () => {
-    generateLifestyleShots()
-  }
+    generateLifestyleShots();
+  };
 
   return (
     <main className="min-h-screen">
@@ -93,7 +108,8 @@ export default function Home() {
             Scene Suggestion App
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Upload your product images and generate beautiful lifestyle shots with AI-powered scene suggestions
+            Upload your product images and generate beautiful lifestyle shots
+            with AI-powered scene suggestions
           </p>
         </header>
 
@@ -102,14 +118,43 @@ export default function Home() {
           <div className="relative z-10 bg-black/40 backdrop-blur-sm rounded-xl p-6 border border-white/10 shadow-xl">
             <div className="space-y-8">
               <section>
-                <h2 className="text-xl font-semibold mb-4">Upload Product Images</h2>
-                <FileUpload onImageUpload={handleImageUpload} />
+                <h2 className="text-xl font-semibold mb-4">
+                  Upload Product Images
+                </h2>
+                <FileUpload
+                  onImageUpload={handleImageUpload}
+                  selectedProduct={selectedProduct}
+                  onProductSelect={handleProductSelect}
+                />
               </section>
 
               {uploadedImages.length > 0 && (
                 <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">Scene Selection</h2>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        Number of images:
+                      </span>
+                      <Select
+                        value={String(numImages)}
+                        onValueChange={(value) => setNumImages(Number(value))}
+                      >
+                        <SelectTrigger className="w-24">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="4">4</SelectItem>
+                          <SelectItem value="6">6</SelectItem>
+                          <SelectItem value="8">8</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <SceneSelector
-                    uploadedImages={uploadedImages}
+                    selectedProduct={selectedProduct}
                     onSceneSelect={handleSceneSelect}
                     selectedScene={selectedScene}
                   />
@@ -118,9 +163,15 @@ export default function Home() {
 
               {uploadedImages.length > 0 && selectedScene && (
                 <section className="flex justify-center">
-                  <Button size="lg" onClick={handleGenerate} disabled={isPending} className="animate-glow">
+                  <Button
+                    size="lg"
+                    onClick={handleGenerate}
+                    disabled={isPending}
+                    className="animate-glow"
+                  >
                     <Wand2 className="mr-2 h-5 w-5" />
-                    Generate Lifestyle Shots
+                    Generate {numImages} Lifestyle Shot
+                    {numImages > 1 ? "s" : ""}
                   </Button>
                 </section>
               )}
@@ -133,6 +184,5 @@ export default function Home() {
         </section>
       </div>
     </main>
-  )
+  );
 }
-

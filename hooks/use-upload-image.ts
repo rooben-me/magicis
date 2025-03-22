@@ -18,26 +18,42 @@ export function useUploadImage() {
       const fileName = `${uuidv4()}.${fileExt}`;
       const filePath = `${fileName}`;
 
+      console.log("Starting upload to Supabase:", {
+        fileName,
+        fileSize: file.size,
+      });
+
       // Upload file to Supabase storage
       const { data, error } = await supabase.storage
         .from("scene-images")
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
 
       if (error) {
+        console.error("Supabase upload error:", error);
         throw error;
       }
+
+      console.log("Upload successful:", data);
 
       // Get public URL
       const {
         data: { publicUrl },
       } = supabase.storage.from("scene-images").getPublicUrl(filePath);
 
+      console.log("Generated public URL:", publicUrl);
+
       return publicUrl;
     } catch (error) {
       console.error("Upload error:", error);
       toast({
         title: "Upload failed",
-        description: "There was an error uploading your image.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "There was an error uploading your image.",
         variant: "destructive",
       });
       return null;
