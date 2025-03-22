@@ -61,7 +61,8 @@ export function SceneSelector({
             description:
               typeof suggestion === "string"
                 ? suggestion
-                : suggestion.description || "Unknown scene",
+                : // @ts-ignore
+                  suggestion.description || "Unknown scene",
           })
         );
         setSuggestions(formattedSuggestions);
